@@ -6,7 +6,7 @@
 
 ---
 
-## 🎯 Project Overview
+## Project Overview
 
 This project showcases a **fully automated DevOps ecosystem** that covers the complete software delivery lifecycle:
 
@@ -22,57 +22,53 @@ This project showcases a **fully automated DevOps ecosystem** that covers the co
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Git Repository                            │
-│                   (Source Code Trigger)                          │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────────┐
-│                    Jenkins Pipeline                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
-│  │Git Checkout  │→ │Compile/Test  │→ │File Scan     │           │
-│  └──────────────┘  └──────────────┘  └──────────────┘           │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
-│  │SonarQube     │→ │Quality Gate  │→ │Nexus Publish │           │
-│  └──────────────┘  └──────────────┘  └──────────────┘           │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
-│  │Docker Build  │→ │Docker Scan   │→ │Docker Push   │           │
-│  └──────────────┘  └──────────────┘  └──────────────┘           │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
-│  │K8s Deploy    │→ │Verify        │→ │Status Report │           │
-│  └──────────────┘  └──────────────┘  └──────────────┘           │
-└─────────────────────────────────────────────────────────────────┘
-                             │
-        ┌────────────────────┼────────────────────┐
-        │                    │                    │
-┌───────▼──────┐    ┌────────▼────────┐  ┌──────▼──────┐
-│  Azure VMs   │    │  Kubernetes     │  │  Container  │
-│  (Jenkins,   │    │  Cluster        │  │  Registry   │
-│  SonarQube,  │    │  (minikube/AKS) │  │  (Docker)   │
-│  Nexus)      │    │                 │  │             │
-└──────────────┘    └─────────────────┘  └─────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────────┐
-│               Terraform Infrastructure (IaC)                     │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  Azure Resource Group → VNet → Subnets → Compute VMs   │   │
-│  │  ✓ Modular architecture (resource_group, network,      │   │
-│  │    compute modules)                                     │   │
-│  │  ✓ Public IPs (Standard SKU) for all services          │   │
-│  │  ✓ Role-based access control & service accounts        │   │
-│  └─────────────────────────────────────────────────────────┘   │
-└────────────────────────────────────────────────────────────────┘
-```
+### CI/CD Pipeline Flow
+
+This diagram illustrates the complete pipeline workflow from code push to Kubernetes deployment:
+
+![CI/CD Pipeline Flow](./Images/pipeline-flow.png)
+
+**Pipeline Stages:**
+1. **Code Push** → GitHub webhook triggers Jenkins
+2. **Git Checkout** → Clone repository with credentials
+3. **Compile** → Maven compiles Java source code
+4. **Unit Tests** → Maven runs JUnit tests
+5. **File System Scan** → Trivy scans source code for vulnerabilities
+6. **SonarQube Analysis** → Static code analysis for bugs, code smells, coverage
+7. **Quality Gate** → Enforces code quality standards (aborts if failed)
+8. **Publish to Nexus** → Maven publishes JAR to Nexus repository
+9. **Docker Build & Tag** → Builds container image with build number
+10. **Docker Image Scan** → Trivy scans container image for vulnerabilities
+11. **Docker Push** → Authenticates with Docker Hub and pushes images
+12. **Deploy to Kubernetes** → Applies deployment manifests
+13. **Verify Deployment** → Confirms pod health and service endpoints
 
 ---
 
-## 📦 Tech Stack
+### Azure Cloud Architecture
+
+This diagram shows the infrastructure provisioned on Microsoft Azure:
+
+![Azure Infrastructure Architecture](./Images/azure-architecture.png)
+
+**Infrastructure Components:**
+- **Resource Group** (`CICD-rg`) — Logical container for all resources
+- **Virtual Network** (`Main-Vnet`) — Network isolation (CIDR: 10.0.0.0/16)
+- **Subnet** (`Subnet-01`) — Subnet for resources (CIDR: 10.0.2.0/24)
+- **Network Security Group (NSG)** — Firewall rules for inbound/outbound traffic
+- **Public IPs** (Standard SKU) — Provides external access to VMs
+- **3 Virtual Machines** (2 vCPU, 8GB RAM each):
+  - **Jenkins-01** — CI/CD orchestration engine
+  - **SonarQube-01** — Code quality and security scanning
+  - **Nexus-01** — Artifact repository for Maven builds
+- **AKS Kubernetes Cluster** — Container orchestration for deployments
+- **Network Interfaces (NICs)** — Connectivity for each VM
+
+---
+
+## Tech Stack
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
@@ -93,7 +89,7 @@ This project showcases a **fully automated DevOps ecosystem** that covers the co
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 CICD_Pipeline/
@@ -151,7 +147,7 @@ CICD_Pipeline/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -245,33 +241,33 @@ kubectl logs -f deployment/boardgames -n webapps
 
 ---
 
-## 🔐 Security & Best Practices
+## Security & Best Practices
 
-✅ **Code Quality:**
+ **Code Quality:**
 - SonarQube integration with quality gates
 - Unit tests enforced in pipeline
 
-✅ **Container Security:**
+ **Container Security:**
 - Trivy scans for vulnerabilities before push
 - Container image scanned post-build
 
-✅ **Infrastructure Security:**
+ **Infrastructure Security:**
 - Terraform modules for reusability
 - Role-based access control (RBAC) in Kubernetes
 - Service accounts with minimal permissions
 - Secrets managed via Kubernetes Secret (production: use HashiCorp Vault)
 
-✅ **Artifact Management:**
+ **Artifact Management:**
 - Maven artifacts published to Nexus
 - Docker images pushed to authenticated registry
 
-✅ **Access Control:**
+ **Access Control:**
 - Jenkins ServiceAccount with ClusterRole permissions
 - Separate namespaces (webapps) for isolation
 
 ---
 
-## 📊 Pipeline Stages
+## Pipeline Stages
 
 ### Stage 1: Git Checkout
 Clones the repository from GitHub using stored credentials.
@@ -334,7 +330,7 @@ kubectl get svc -n webapps
 
 ---
 
-## 🛠️ Configuration
+## Configuration
 
 ### Environment Variables (Jenkins)
 
@@ -365,7 +361,7 @@ kubectl create namespace webapps
 
 ---
 
-## 📈 Monitoring & Logs
+## Monitoring & Logs
 
 ### Jenkins Build Logs
 Navigate to Jenkins dashboard → Job → Build Number → Console Output
@@ -385,7 +381,7 @@ kubectl describe pod <pod-name> -n webapps
 
 ---
 
-## 🔄 CI/CD Workflow
+## CI/CD Workflow
 
 ```
 Developer Push to Git
@@ -410,13 +406,35 @@ Kubernetes Deploy
     ↓
 Verification & Status Report
     ↓
-Pipeline Complete ✅
+Pipeline Complete 
 ```
 
 ---
+##  Getting Started
 
-## 🎓 Learning Outcomes
+### **1️⃣ Clone the Repository**
 
+```bash
+git clone https://github.com/Amogh052003/CICD_Pipeline.git
+cd CICD_Pipeline
+```
+
+### **2️⃣ Deploy Azure Infrastructure**
+
+```bash
+cd Project_Infra
+terraform init
+terraform plan
+terraform apply -auto-approve
+```
+
+### **3️⃣ Apply Kubernetes Configurations**
+
+```bash
+kubectl apply -f kubernetes/
+kubectl get pods -n webapps
+```
+---
 This project demonstrates:
 
 1. **DevOps Pipeline Design** — Multi-stage automated delivery
@@ -430,35 +448,7 @@ This project demonstrates:
 
 ---
 
-## 💼 Why This Project Gets Hired
-
-✨ **Enterprise-Grade Architecture**
-- Modular Terraform design (reusable modules)
-- Separation of concerns (compute, network, resource groups)
-- Production-ready security scanning
-
-✨ **End-to-End Automation**
-- Zero-manual deployment
-- Reproducible infrastructure
-- Audit trail for compliance
-
-✨ **Multi-Tool Integration**
-- Git + Jenkins + Maven + SonarQube + Trivy + Nexus + Docker + Kubernetes + Terraform
-- Shows proficiency across the DevOps stack
-
-✨ **Security & Compliance**
-- Code quality gates enforce standards
-- Container vulnerability scanning
-- RBAC and service account isolation
-
-✨ **Scalability & Maintainability**
-- Infrastructure as code (version controlled)
-- Modular Terraform (easy to extend)
-- Kubernetes-ready for horizontal scaling
-
----
-
-## 🤝 Contributing
+## Contributing
 
 To extend this project:
 
@@ -468,34 +458,6 @@ To extend this project:
 4. Integrate HashiCorp Vault for secrets management
 5. Add multi-region Azure deployment
 6. Implement Terraform remote backend (Azure Storage)
-
----
-
-## 📝 License
-
-This project is open-source and available under the MIT License.
-
----
-
-## 📞 Contact
-
-**GitHub:** [@Amogh052003](https://github.com/Amogh052003)
-
----
-
-## 🏆 Project Highlights
-
-| Feature | Status |
-|---------|--------|
-| CI/CD Pipeline | ✅ Complete |
-| Infrastructure as Code (IaC) | ✅ Complete |
-| Kubernetes Deployment | ✅ Complete |
-| Security Scanning | ✅ Complete |
-| Code Quality Gates | ✅ Complete |
-| Docker Containerization | ✅ Complete |
-| Role-Based Access Control | ✅ Complete |
-| Terraform Modules | ✅ Complete |
-| .gitignore Configuration | ✅ Complete |
 
 ---
 
